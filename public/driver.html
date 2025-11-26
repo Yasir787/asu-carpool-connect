@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ASU Carpool - Driver</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Trebuchet MS", Arial, sans-serif;
+        background: #f0f0f0;
+        color: #333;
+      }
+
+      /* ASU Theme Colors */
+      :root {
+        --asu-maroon: #8b1538;
+        --asu-gold: #ffc627;
+        --asu-dark: #5a0f23;
+      }
+
+      /* Navbar */
+      .navbar {
+        background: var(--asu-maroon);
+        color: white;
+        padding: 12px 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      .navbar-content {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .navbar .logo {
+        height: 50px;
+        width: auto;
+        background: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+      .navbar h1 {
+        font-size: 1.4em;
+        flex: 1;
+      }
+      .navbar-links {
+        display: flex;
+        gap: 20px;
+      }
+      .navbar a {
+        color: var(--asu-gold);
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .navbar a:hover {
+        text-decoration: underline;
+      }
+
+      main {
+        max-width: 1000px;
+        margin: 24px auto;
+        padding: 0 12px;
+      }
+
+      .section {
+        background: white;
+        padding: 24px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-top: 4px solid var(--asu-maroon);
+      }
+
+      .section h2 {
+        color: var(--asu-maroon);
+        margin-bottom: 16px;
+        font-size: 1.3em;
+        border-bottom: 2px solid var(--asu-gold);
+        padding-bottom: 8px;
+      }
+
+      label {
+        display: block;
+        margin: 12px 0 6px;
+        font-weight: bold;
+        color: var(--asu-maroon);
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 1em;
+      }
+
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--asu-gold);
+        box-shadow: 0 0 4px rgba(255, 198, 39, 0.3);
+      }
+
+      button {
+        padding: 12px 20px;
+        background: var(--asu-maroon);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: bold;
+        transition: background 0.2s;
+      }
+
+      button:hover {
+        background: var(--asu-dark);
+      }
+
+      .success {
+        color: #28a745;
+        font-weight: bold;
+      }
+      .error {
+        color: #dc3545;
+        font-weight: bold;
+      }
+
+      .request-item {
+        border-left: 5px solid var(--asu-gold);
+        padding: 14px;
+        margin-bottom: 10px;
+        background: #fafafa;
+        border-radius: 4px;
+      }
+
+      .request-item strong {
+        color: var(--asu-maroon);
+        font-size: 1.05em;
+      }
+
+      .request-item .meta {
+        color: #666;
+        font-size: 0.9em;
+        margin-top: 6px;
+      }
+
+      .notification-badge {
+        display: inline-block;
+        background: var(--asu-gold);
+        color: var(--asu-maroon);
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        text-align: center;
+        line-height: 28px;
+        margin-left: 8px;
+        font-size: 0.9em;
+        font-weight: bold;
+      }
+
+      footer {
+        background: var(--asu-maroon);
+        color: white;
+        text-align: center;
+        padding: 16px;
+        margin-top: 40px;
+        font-size: 0.9em;
+      }
+
+      footer a {
+        color: var(--asu-gold);
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-content">
+        <a href="/" target="_self">
+          <img src="/assets/asu_logo.png" alt="ASU" class="logo" />
+        </a>
+        <h1>ASU Carpool Connect - Driver</h1>
+        <div class="navbar-links">
+          <a href="/" target="_self">Home</a>
+          <a href="/rider.html" target="_self">Find a Ride</a>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <section class="section">
+        <h2>Share a Ride</h2>
+        <form id="driverForm">
+          <label for="name">Name*</label>
+          <input id="name" name="name" required />
+
+          <label for="email">ASU Email (required)</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            placeholder="yourname@asu.edu"
+          />
+          <small style="display: block; color: #666; margin-bottom: 8px"
+            >You must use your ASU email address (ending with
+            <code>@asu.edu</code>).</small
+          >
+
+          <label for="phone">Phone</label>
+          <input id="phone" name="phone" />
+
+          <label for="origin">Origin*</label>
+          <input id="origin" name="origin" required />
+
+          <label for="destination">Destination*</label>
+          <input id="destination" name="destination" required />
+
+          <label for="seats">Seats available</label>
+          <input id="seats" name="seats" type="number" min="1" value="1" />
+
+          <label for="time">Time (optional)</label>
+          <input id="time" name="time" placeholder="e.g. 2025-12-01 08:15" />
+
+          <button type="submit">Share Ride</button>
+        </form>
+        <p id="msg"></p>
+      </section>
+
+      <section class="section">
+        <h2>
+          Ride Requests
+          <span class="notification-badge" id="requestCount">0</span>
+        </h2>
+        <p>
+          Enter your ASU email to view and manage ride requests from passengers.
+        </p>
+        <input
+          id="driverLookupEmail"
+          placeholder="yourname@asu.edu"
+          style="padding: 8px; margin-right: 8px"
+        />
+        <button id="loadRequests">Load Requests</button>
+        <div id="requestsList" style="margin-top: 12px">
+          No requests loaded.
+        </div>
+      </section>
+
+      <script>
+        const form = document.getElementById("driverForm");
+        const msg = document.getElementById("msg");
+
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          msg.textContent = "";
+          const data = {
+            name: form.name.value,
+            email: form.email.value,
+            phone: form.phone.value,
+            origin: form.origin.value,
+            destination: form.destination.value,
+            seats: form.seats.value,
+            time: form.time.value,
+          };
+
+          // Client-side ASU email validation
+          const asuEmail = /[A-Z0-9._%+-]+@asu\.edu$/i;
+          if (!data.email || !asuEmail.test(data.email)) {
+            msg.textContent =
+              "Please enter a valid ASU email address (ending with @asu.edu).";
+            msg.className = "";
+            return;
+          }
+
+          try {
+            const res = await fetch("/api/driver", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+            const j = await res.json();
+            if (j.ok) {
+              msg.textContent = "Ride shared — thank you!";
+              msg.className = "success";
+              form.reset();
+            } else {
+              msg.textContent = j.error || "Failed to share ride";
+            }
+          } catch (err) {
+            msg.textContent = "Network error: " + err.message;
+          }
+        });
+
+        document
+          .getElementById("loadRequests")
+          .addEventListener("click", async () => {
+            const email = document.getElementById("driverLookupEmail").value;
+            const list = document.getElementById("requestsList");
+            const badge = document.getElementById("requestCount");
+            list.textContent = "Loading...";
+            if (!email) {
+              list.textContent = "Enter your ASU email.";
+              return;
+            }
+            try {
+              const res = await fetch(
+                "/api/requests?driverEmail=" + encodeURIComponent(email)
+              );
+              if (!res.ok) {
+                const j = await res.json();
+                list.textContent = j.error || "Failed to load requests";
+                badge.textContent = "0";
+                return;
+              }
+              const arr = await res.json();
+              badge.textContent = arr.length;
+              if (!Array.isArray(arr) || arr.length === 0) {
+                list.textContent =
+                  "No requests yet. Share your ride and wait for riders!";
+                return;
+              }
+              list.innerHTML = "";
+              arr.forEach((r) => {
+                const el = document.createElement("div");
+                el.className = "request-item";
+                el.innerHTML = `
+              <strong>${r.name}</strong> (${r.email})
+              <div>📞 ${r.phone || "Not provided"}</div>
+              <div style="margin-top:6px; font-style: italic;">${
+                r.message || "No message"
+              }</div>
+              <div class="meta">Requested: ${new Date(
+                r.createdAt
+              ).toLocaleString()}</div>
+            `;
+                list.appendChild(el);
+              });
+            } catch (e) {
+              list.textContent = "Error: " + e.message;
+            }
+          });
+
+        // Auto-fetch requests periodically if email is entered
+        setInterval(() => {
+          const email = document.getElementById("driverLookupEmail").value;
+          if (email) {
+            document.getElementById("loadRequests").click();
+          }
+        }, 10000);
+      </script>
+    </main>
+
+    <footer>
+      <p>
+        ASU Carpool Connect © 2025 |
+        <a href="https://www.asu.edu" target="_blank"
+          >Arizona State University</a
+        >
+      </p>
+    </footer>
+  </body>
+</html>

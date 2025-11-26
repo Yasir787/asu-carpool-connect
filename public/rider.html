@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ASU Carpool - Find Rides</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Trebuchet MS", Arial, sans-serif;
+        background: #f0f0f0;
+        color: #333;
+      }
+
+      /* ASU Theme Colors */
+      :root {
+        --asu-maroon: #8b1538;
+        --asu-gold: #ffc627;
+        --asu-dark: #5a0f23;
+      }
+
+      /* Navbar */
+      .navbar {
+        background: var(--asu-maroon);
+        color: white;
+        padding: 12px 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      .navbar-content {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .navbar .logo {
+        height: 50px;
+        width: auto;
+        background: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+      .navbar h1 {
+        font-size: 1.4em;
+        flex: 1;
+      }
+      .navbar-links {
+        display: flex;
+        gap: 20px;
+      }
+      .navbar a {
+        color: var(--asu-gold);
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .navbar a:hover {
+        text-decoration: underline;
+      }
+
+      main {
+        max-width: 1000px;
+        margin: 24px auto;
+        padding: 0 12px;
+      }
+
+      .validation-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border-top: 4px solid var(--asu-gold);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .validation-card label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: var(--asu-maroon);
+      }
+
+      .validation-card input {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-right: 8px;
+        flex: 1;
+      }
+
+      .validation-card button {
+        padding: 10px 16px;
+        background: var(--asu-maroon);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .validation-card button:hover {
+        background: var(--asu-dark);
+      }
+
+      .ride {
+        background: white;
+        border-top: 5px solid var(--asu-gold);
+        padding: 16px;
+        margin-bottom: 12px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .ride strong {
+        color: var(--asu-maroon);
+        font-size: 1.15em;
+      }
+
+      .ride button {
+        margin-top: 10px;
+        padding: 10px 14px;
+        background: var(--asu-maroon);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 0.95em;
+      }
+
+      .ride button:hover {
+        background: var(--asu-dark);
+      }
+
+      .meta {
+        color: #666;
+        font-size: 0.9em;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+      }
+
+      .modal.active {
+        display: block;
+      }
+
+      .modal-content {
+        background: white;
+        margin: 5% auto;
+        padding: 24px;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        border-bottom: 3px solid var(--asu-gold);
+        padding-bottom: 12px;
+      }
+
+      .modal-header h2 {
+        margin: 0;
+        color: var(--asu-maroon);
+        font-size: 1.3em;
+      }
+
+      .close {
+        cursor: pointer;
+        font-size: 28px;
+        color: #999;
+        transition: color 0.2s;
+      }
+
+      .close:hover {
+        color: var(--asu-maroon);
+      }
+
+      .form-group {
+        margin-bottom: 14px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: bold;
+        color: var(--asu-maroon);
+      }
+
+      .form-group input,
+      .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 1em;
+      }
+
+      .form-group input:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: var(--asu-gold);
+        box-shadow: 0 0 4px rgba(255, 198, 39, 0.3);
+      }
+
+      .form-group textarea {
+        min-height: 80px;
+      }
+
+      .modal-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .modal-buttons button {
+        flex: 1;
+        padding: 11px;
+        font-weight: bold;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1em;
+      }
+
+      .modal-buttons button[type="submit"] {
+        background: var(--asu-maroon);
+        color: white;
+      }
+
+      .modal-buttons button[type="submit"]:hover {
+        background: var(--asu-dark);
+      }
+
+      .cancel-btn {
+        background: #999;
+      }
+      .cancel-btn:hover {
+        background: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-content">
+        <a href="/" target="_self">
+          <img src="/assets/asu_logo.png" alt="ASU" class="logo" />
+        </a>
+        <h1>Find a Carpool</h1>
+        <div class="navbar-links">
+          <a href="/" target="_self">Home</a>
+          <a href="/driver.html" target="_self">Share a Ride</a>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <div class="validation-card">
+        <label for="visitorEmail"
+          >Enter your ASU email to reveal driver contact info</label
+        >
+        <div style="display: flex; gap: 8px; margin-top: 10px">
+          <input
+            id="visitorEmail"
+            placeholder="yourname@asu.edu"
+            style="flex: 1; padding: 10px"
+          />
+          <button id="validateBtn">Validate</button>
+        </div>
+        <div id="validateMsg" style="margin-top: 8px"></div>
+      </div>
+
+      <div id="list">Loading rides...</div>
+
+      <!-- Request Modal -->
+      <div id="requestModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Request a Seat</h2>
+            <span class="close" id="closeModal">&times;</span>
+          </div>
+          <form id="requestForm">
+            <div class="form-group">
+              <label for="reqName">Your Full Name*</label>
+              <input id="reqName" required />
+            </div>
+            <div class="form-group">
+              <label for="reqEmail">Your ASU Email*</label>
+              <input
+                id="reqEmail"
+                type="email"
+                placeholder="yourname@asu.edu"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="reqPhone">Phone Number</label>
+              <input id="reqPhone" type="tel" />
+            </div>
+            <div class="form-group">
+              <label for="reqMessage">Message for Driver</label>
+              <textarea id="reqMessage"></textarea>
+            </div>
+            <div class="modal-buttons">
+              <button type="button" class="cancel-btn" id="cancelModal">
+                Cancel
+              </button>
+              <button type="submit">Send Request</button>
+            </div>
+          </form>
+          <div id="reqStatus"></div>
+        </div>
+      </div>
+
+      <div id="list">Loading...</div>
+
+      <script>
+        const list = document.getElementById("list");
+
+        async function load() {
+          try {
+            const res = await fetch("/api/rides");
+            const rides = await res.json();
+            if (!Array.isArray(rides)) {
+              list.innerText = "No rides available.";
+              return;
+            }
+
+            if (rides.length === 0) {
+              list.innerText = "No rides yet. Check back soon.";
+              return;
+            }
+
+            list.innerHTML = "";
+            const validated = sessionStorage.getItem("validatedAsu") === "1";
+            rides.forEach((r) => {
+              const el = document.createElement("div");
+              el.className = "ride";
+              const contact =
+                r.phone || r.email
+                  ? validated
+                    ? r.phone || r.email
+                    : "Hidden — validate ASU email above"
+                  : "—";
+              el.innerHTML = `<strong>${r.origin} → ${r.destination}</strong>
+                <div class="meta">Driver: ${r.name} ${
+                r.time ? " • " + r.time : ""
+              }</div>
+                <div>Seats: ${r.seats} • Contact: ${contact}</div>
+                <div style="margin-top:8px">
+                  <button class="requestBtn" data-rideid="${
+                    r.id
+                  }">Request Seat</button>
+                </div>
+                <div class="meta">Posted: ${new Date(
+                  r.createdAt
+                ).toLocaleString()}</div>`;
+              list.appendChild(el);
+            });
+          } catch (err) {
+            list.innerText = "Failed to load rides: " + err.message;
+          }
+        }
+
+        document
+          .getElementById("validateBtn")
+          .addEventListener("click", async () => {
+            const email = document.getElementById("visitorEmail").value;
+            const msg = document.getElementById("validateMsg");
+            msg.textContent = "";
+            if (!email) {
+              msg.textContent = "Enter your ASU email";
+              return;
+            }
+            try {
+              const res = await fetch("/api/validate-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+              });
+              if (!res.ok) {
+                const j = await res.json();
+                msg.textContent = j.error || "Invalid ASU email";
+                return;
+              }
+              sessionStorage.setItem("validatedAsu", "1");
+              msg.style.color = "green";
+              msg.textContent = "Validated — contact info revealed";
+              load();
+            } catch (e) {
+              msg.textContent = "Validation failed: " + e.message;
+            }
+          });
+
+        // Handle request button clicks (delegated)
+        const modal = document.getElementById("requestModal");
+        const closeModal = document.getElementById("closeModal");
+        const cancelModal = document.getElementById("cancelModal");
+        const requestForm = document.getElementById("requestForm");
+        let currentRideId = null;
+
+        document.addEventListener("click", (ev) => {
+          const btn = ev.target.closest && ev.target.closest(".requestBtn");
+          if (!btn) return;
+          currentRideId = btn.getAttribute("data-rideid");
+          modal.classList.add("active");
+          requestForm.reset();
+          document.getElementById("reqStatus").textContent = "";
+        });
+
+        closeModal.addEventListener("click", () =>
+          modal.classList.remove("active")
+        );
+        cancelModal.addEventListener("click", () =>
+          modal.classList.remove("active")
+        );
+
+        modal.addEventListener("click", (e) => {
+          if (e.target === modal) modal.classList.remove("active");
+        });
+
+        requestForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const status = document.getElementById("reqStatus");
+          status.textContent = "Sending...";
+          status.style.color = "#666";
+
+          const data = {
+            rideId: currentRideId,
+            name: document.getElementById("reqName").value,
+            email: document.getElementById("reqEmail").value,
+            phone: document.getElementById("reqPhone").value,
+            message: document.getElementById("reqMessage").value,
+          };
+
+          try {
+            const res = await fetch("/api/request", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+            const j = await res.json();
+            if (!res.ok) {
+              status.textContent = j.error || "Request failed";
+              status.style.color = "#b00";
+              return;
+            }
+            status.textContent =
+              "✓ Request sent! The driver will contact you soon.";
+            status.style.color = "green";
+            setTimeout(() => modal.classList.remove("active"), 2000);
+          } catch (e) {
+            status.textContent = "Error: " + e.message;
+            status.style.color = "#b00";
+          }
+        });
+
+        load();
+        setInterval(load, 10000);
+      </script>
+    </main>
+
+    <footer>
+      <p>
+        ASU Carpool Connect © 2025 |
+        <a href="https://www.asu.edu" target="_blank"
+          >Arizona State University</a
+        >
+      </p>
+    </footer>
+  </body>
+</html>
