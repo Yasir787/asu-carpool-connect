@@ -2,7 +2,9 @@
 
 This is a lightweight demo web app to collect driver ride offers and save them to Google Sheets, and to display ride offers to riders.
 
-Features
+## Demo Video
+
+![Application Demo](public/assets/demo.webp)
 
 - Driver form at `/` to submit ride info.
 - Rider page at `/rider` to view available rides.
