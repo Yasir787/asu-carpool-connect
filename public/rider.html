@@ -10,7 +10,15 @@
         padding: 0;
         box-sizing: border-box;
       }
+      html,
       body {
+        height: 100%;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
         font-family: "Trebuchet MS", Arial, sans-serif;
         background: #f0f0f0;
         color: #333;
@@ -31,9 +39,9 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       }
       .navbar-content {
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 0 12px;
+        width: 100%;
+        max-width: none;
+        padding: 0 20px;
         display: flex;
         align-items: center;
         gap: 16px;
@@ -64,9 +72,33 @@
       }
 
       main {
-        max-width: 1000px;
-        margin: 24px auto;
-        padding: 0 12px;
+        width: 100%;
+        max-width: none;
+        margin: 24px 0;
+        padding: 0 20px;
+        flex: 1 0 auto;
+      }
+
+      /* Google Maps Container */
+      #mapContainer {
+        width: 100%;
+        height: 400px;
+        margin-bottom: 24px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Make ride list use full width and responsive grid */
+      #list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 12px;
       }
 
       .validation-card {
@@ -256,6 +288,29 @@
       .cancel-btn:hover {
         background: #777;
       }
+      /* Toast notification */
+      .toast {
+        position: fixed;
+        right: 16px;
+        bottom: 24px;
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        z-index: 2000;
+        display: none;
+        max-width: 320px;
+      }
+      .toast.show {
+        display: block;
+      }
+      .toast.success {
+        background: linear-gradient(90deg, #2b8a3e, #1f6f2d);
+      }
+      .toast.warn {
+        background: linear-gradient(90deg, #8b1538, #5a0f23);
+      }
     </style>
   </head>
   <body>
@@ -313,7 +368,13 @@
             </div>
             <div class="form-group">
               <label for="reqPhone">Phone Number</label>
-              <input id="reqPhone" type="tel" />
+              <input
+                id="reqPhone"
+                type="tel"
+                placeholder="1234567890"
+                pattern="\d{10}"
+                maxlength="10"
+              />
             </div>
             <div class="form-group">
               <label for="reqMessage">Message for Driver</label>
@@ -330,14 +391,216 @@
         </div>
       </div>
 
+      <!-- Google Maps Container -->
+      <div id="mapContainer">
+        <div id="map"></div>
+      </div>
+
+      <div id="locationMsg" style="margin-bottom: 8px; color: #555">
+        Detecting location...
+      </div>
+      <section class="section" id="riderDashboard">
+        <h2>Your Rider Dashboard</h2>
+        <p>Enter your ASU email to view and manage your ride requests.</p>
+        <div
+          style="
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+          "
+        >
+          <input
+            id="riderEmail"
+            placeholder="yourname@asu.edu"
+            style="flex: 1; padding: 8px"
+          />
+          <button id="loadMyRequests">Load My Requests</button>
+        </div>
+        <div id="myRequestsList">No requests loaded.</div>
+      </section>
+
       <div id="list">Loading...</div>
 
+      <!-- Toast notification -->
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+      <script
+        async
+        defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC6PHjBJZG1y1Yq6kFJL2Bv-8rrW5c1h1g&v=weekly&libraries=marker&callback=initMap"
+      ></script>
+      <script src="/socket.io/socket.io.js"></script>
       <script>
+        const socket = io();
         const list = document.getElementById("list");
+        let map = null;
+        let markers = [];
+        let userLocation = { lat: 33.4236, lng: -111.9277 }; // Default: ASU Tempe campus
+
+        // Initialize Google Map
+        function initMap() {
+          map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 13,
+            center: userLocation,
+            mapTypeControl: true,
+            fullscreenControl: true,
+          });
+          // Maps API loaded: load rides and markers now that `map` exists.
+          try {
+            load();
+          } catch (e) {
+            // Fail silently — load() will be retried by the interval.
+            console.error("Error running initial load():", e && e.message);
+          }
+        }
+
+        // Add markers for rides to map
+        function addRideMarkers(rides) {
+          // Clear existing markers
+          markers.forEach((m) => m.setMap(null));
+          markers = [];
+
+          rides.forEach((ride) => {
+            if (!ride.originLat || !ride.originLng) return;
+            // Prefer AdvancedMarkerElement when available (marker library)
+            if (
+              window.google &&
+              google.maps &&
+              google.maps.marker &&
+              google.maps.marker.AdvancedMarkerElement
+            ) {
+              const markerEl = document.createElement("div");
+              markerEl.style.width = "16px";
+              markerEl.style.height = "16px";
+              markerEl.style.borderRadius = "50%";
+              markerEl.style.background = "#8b1538";
+              markerEl.style.border = "2px solid #ffc627";
+              markerEl.style.boxSizing = "border-box";
+              markerEl.title = `${ride.origin} → ${ride.destination}`;
+
+              const advMarker = new google.maps.marker.AdvancedMarkerElement({
+                position: { lat: ride.originLat, lng: ride.originLng },
+                map,
+                title: `${ride.origin} → ${ride.destination}`,
+                content: markerEl,
+              });
+
+              advMarker.addListener("click", () => {
+                const infowindow = new google.maps.InfoWindow({
+                  content: `<div style="padding:8px"><strong>${ride.origin} → ${
+                    ride.destination
+                  }</strong><br/>Driver: ${ride.name}<br/>Seats: ${
+                    ride.seats
+                  }<br/>Time: ${ride.time || "N/A"}</div>`,
+                });
+                // use anchor option for AdvancedMarkerElement
+                try {
+                  infowindow.open({ anchor: advMarker, map });
+                } catch (e) {
+                  // fallback
+                  infowindow.open(map, advMarker);
+                }
+              });
+
+              markers.push(advMarker);
+            } else {
+              // Fallback to legacy Marker when AdvancedMarkerElement is not present
+              const marker = new google.maps.Marker({
+                position: { lat: ride.originLat, lng: ride.originLng },
+                map: map,
+                title: `${ride.origin} → ${ride.destination}`,
+                icon: {
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: 8,
+                  fillColor: "#8b1538",
+                  fillOpacity: 0.7,
+                  strokeColor: "#ffc627",
+                  strokeWeight: 2,
+                },
+              });
+
+              marker.addListener("click", () => {
+                const infowindow = new google.maps.InfoWindow({
+                  content: `<div style="padding:8px"><strong>${ride.origin} → ${
+                    ride.destination
+                  }</strong><br/>Driver: ${ride.name}<br/>Seats: ${
+                    ride.seats
+                  }<br/>Time: ${ride.time || "N/A"}</div>`,
+                });
+                infowindow.open(map, marker);
+              });
+
+              markers.push(marker);
+            }
+          });
+        }
+
+        // Center map on user location if available
+        function centerMapOnUser(lat, lng) {
+          userLocation = { lat, lng };
+          if (map) {
+            map.setCenter(userLocation);
+            map.setZoom(12);
+          }
+        }
 
         async function load() {
+          const locationMsg = document.getElementById("locationMsg");
+          let useNear = false;
+          let userLat, userLng;
           try {
-            const res = await fetch("/api/rides");
+            const pos = await new Promise((resolve, reject) => {
+              if (!navigator.geolocation)
+                return reject(new Error("Geolocation not supported"));
+              const t = setTimeout(
+                () => reject(new Error("Location timeout")),
+                5000
+              );
+              navigator.geolocation.getCurrentPosition(
+                (p) => {
+                  clearTimeout(t);
+                  resolve(p);
+                },
+                (err) => {
+                  clearTimeout(t);
+                  reject(err);
+                },
+                { maximumAge: 60000, timeout: 5000 }
+              );
+            });
+            userLat = pos.coords.latitude;
+            userLng = pos.coords.longitude;
+            useNear = true;
+            locationMsg.textContent =
+              "Showing rides near your location (within 10 km).";
+            // Center map on user location
+            centerMapOnUser(userLat, userLng);
+          } catch (e) {
+            useNear = false;
+            locationMsg.textContent =
+              "Location unavailable — showing all rides.";
+          }
+
+          try {
+            const url = useNear
+              ? `/api/rides?lat=${userLat}&lng=${userLng}&radiusKm=10`
+              : "/api/rides";
+            const res = await fetch(url);
+            if (!res.ok) {
+              const text = await res.text().catch(() => res.statusText);
+              throw new Error(text || `HTTP ${res.status}`);
+            }
+
+            // Protect against HTML error pages being returned instead of JSON
+            const contentType = res.headers.get("content-type") || "";
+            if (!contentType.includes("application/json")) {
+              const text = await res.text();
+              throw new Error(
+                text || "Unexpected non-JSON response from server"
+              );
+            }
+
             const rides = await res.json();
             if (!Array.isArray(rides)) {
               list.innerText = "No rides available.";
@@ -345,12 +608,14 @@
             }
 
             if (rides.length === 0) {
-              list.innerText = "No rides yet. Check back soon.";
+              list.innerText = "No rides found.";
               return;
             }
 
             list.innerHTML = "";
             const validated = sessionStorage.getItem("validatedAsu") === "1";
+            // Add ride markers to map
+            addRideMarkers(rides);
             rides.forEach((r) => {
               const el = document.createElement("div");
               el.className = "ride";
@@ -360,15 +625,22 @@
                     ? r.phone || r.email
                     : "Hidden — validate ASU email above"
                   : "—";
+              // Seats display: show Full/Unavailable when seats === 0
+              const seatsNum = parseInt(r.seats || "0", 10) || 0;
+              const seatsText =
+                seatsNum === 0 ? "Full / Unavailable" : String(r.seats);
+              const distanceHtml = r.distanceKm
+                ? ` • ${r.distanceKm} km away`
+                : "";
               el.innerHTML = `<strong>${r.origin} → ${r.destination}</strong>
                 <div class="meta">Driver: ${r.name} ${
                 r.time ? " • " + r.time : ""
-              }</div>
-                <div>Seats: ${r.seats} • Contact: ${contact}</div>
+              }${distanceHtml}</div>
+                <div>Seats: ${seatsText} • Contact: ${contact}</div>
                 <div style="margin-top:8px">
-                  <button class="requestBtn" data-rideid="${
-                    r.id
-                  }">Request Seat</button>
+                  <button class="requestBtn" data-rideid="${r.id}" ${
+                seatsNum === 0 ? "disabled title='No seats available'" : ""
+              }>${seatsNum === 0 ? "Full" : "Request Seat"}</button>
                 </div>
                 <div class="meta">Posted: ${new Date(
                   r.createdAt
@@ -397,8 +669,14 @@
                 body: JSON.stringify({ email }),
               });
               if (!res.ok) {
-                const j = await res.json();
-                msg.textContent = j.error || "Invalid ASU email";
+                const text = await res.text().catch(() => null);
+                let j = null;
+                try {
+                  j = text ? JSON.parse(text) : null;
+                } catch (e) {
+                  j = null;
+                }
+                msg.textContent = (j && j.error) || text || "Invalid ASU email";
                 return;
               }
               sessionStorage.setItem("validatedAsu", "1");
@@ -451,30 +729,200 @@
             message: document.getElementById("reqMessage").value,
           };
 
+          // Phone validation: optional, but if provided must be 10 digits
+          if (data.phone && data.phone.trim()) {
+            const phoneDigits = data.phone.replace(/\D/g, "");
+            if (!/^\d{10}$/.test(phoneDigits)) {
+              status.textContent =
+                "Phone must be exactly 10 digits (numbers only).";
+              status.style.color = "#b00";
+              return;
+            }
+            data.phone = phoneDigits;
+          }
+
           try {
             const res = await fetch("/api/request", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(data),
             });
-            const j = await res.json();
             if (!res.ok) {
-              status.textContent = j.error || "Request failed";
+              const text = await res.text().catch(() => null);
+              let j = null;
+              try {
+                j = text ? JSON.parse(text) : null;
+              } catch (e) {
+                j = null;
+              }
+              status.textContent = (j && j.error) || text || "Request failed";
               status.style.color = "#b00";
               return;
             }
+            const j = await res.json();
             status.textContent =
               "✓ Request sent! The driver will contact you soon.";
             status.style.color = "green";
-            setTimeout(() => modal.classList.remove("active"), 2000);
+            // remember the rider email so we can show notifications
+            try {
+              if (data.email)
+                sessionStorage.setItem("myRiderEmail", data.email);
+              // pre-fill rider dashboard email input for convenience
+              const riderEmailInput = document.getElementById("riderEmail");
+              if (riderEmailInput && data.email)
+                riderEmailInput.value = data.email;
+            } catch (e) {}
+
+            setTimeout(() => modal.classList.remove("active"), 1200);
+            // refresh rider dashboard if visible
+            if (riderEmailInput && riderEmailInput.value)
+              document.getElementById("loadMyRequests").click();
           } catch (e) {
             status.textContent = "Error: " + e.message;
             status.style.color = "#b00";
           }
         });
 
-        load();
+        // Initialize map and load rides once the Maps API calls `initMap`
+        // `initMap` will call `load()` after creating the map.
         setInterval(load, 10000);
+
+        // Rider Dashboard: load my requests
+        document
+          .getElementById("loadMyRequests")
+          .addEventListener("click", async () => {
+            const email = document.getElementById("riderEmail").value;
+            const list = document.getElementById("myRequestsList");
+            if (!email) {
+              list.textContent = "Enter your ASU email.";
+              return;
+            }
+            list.textContent = "Loading...";
+            try {
+              const res = await fetch(
+                "/api/requests/mine?email=" + encodeURIComponent(email)
+              );
+              if (!res.ok) {
+                const j = await res.json();
+                list.textContent = j.error || "Failed to load";
+                return;
+              }
+              const arr = await res.json();
+              if (!Array.isArray(arr) || arr.length === 0) {
+                list.textContent = "No requests found.";
+                return;
+              }
+              list.innerHTML = "";
+              arr.forEach((r) => {
+                const el = document.createElement("div");
+                el.className = "ride";
+                const status = r.status || "pending";
+                const cancelBtn =
+                  status === "pending"
+                    ? `<button class="cancelReqBtn" data-reqid="${r.id}">Cancel</button>`
+                    : "";
+                el.innerHTML = `<strong>${r.rideId}</strong>
+                <div class="meta">Driver: ${
+                  r.rideDriverEmail
+                } • Status: ${status}</div>
+                <div>Message: ${r.message || "—"}</div>
+                <div style="margin-top:8px">${cancelBtn}</div>
+                <div class="meta">Requested: ${new Date(
+                  r.createdAt
+                ).toLocaleString()}</div>`;
+                list.appendChild(el);
+              });
+            } catch (e) {
+              list.textContent = "Error: " + e.message;
+            }
+          });
+
+        // handle cancel
+        document.addEventListener("click", async (ev) => {
+          const btn = ev.target.closest && ev.target.closest(".cancelReqBtn");
+          if (!btn) return;
+          const id = btn.getAttribute("data-reqid");
+          if (!confirm("Cancel this request?")) return;
+          btn.disabled = true;
+          try {
+            const res = await fetch(
+              "/api/requests/" + encodeURIComponent(id) + "/cancel",
+              { method: "POST" }
+            );
+            if (!res.ok) {
+              const j = await res.json();
+              alert(j.error || "Failed to cancel");
+              btn.disabled = false;
+              return;
+            }
+            // refresh
+            document.getElementById("loadMyRequests").click();
+          } catch (e) {
+            alert("Network error: " + e.message);
+            btn.disabled = false;
+          }
+        });
+
+        // real-time updates for rider dashboard
+        // helper to show toast notifications
+        function showToast(msg, type = "success", ttl = 6000) {
+          const t = document.getElementById("toast");
+          if (!t) return;
+          t.textContent = msg;
+          t.className = "toast show " + (type === "warn" ? "warn" : "success");
+          clearTimeout(t._hideTimer);
+          t._hideTimer = setTimeout(() => {
+            t.className = "toast";
+          }, ttl);
+        }
+
+        socket.on("requestAccepted", (data) => {
+          try {
+            const emailInput = document.getElementById("riderEmail");
+            const stored = sessionStorage.getItem("myRiderEmail");
+            const target =
+              (emailInput && emailInput.value) || (stored ? stored : null);
+            if (
+              target &&
+              data.request &&
+              data.request.email &&
+              data.request.email.toLowerCase() === target.toLowerCase()
+            ) {
+              showToast(
+                `Your request for ride ${data.request.rideId} was accepted by the driver.`
+              );
+              // refresh dashboard
+              if (document.getElementById("loadMyRequests"))
+                document.getElementById("loadMyRequests").click();
+            }
+          } catch (e) {}
+        });
+
+        socket.on("requestCanceled", (data) => {
+          try {
+            const emailInput = document.getElementById("riderEmail");
+            const stored = sessionStorage.getItem("myRiderEmail");
+            const target =
+              (emailInput && emailInput.value) || (stored ? stored : null);
+            if (
+              target &&
+              data.request &&
+              data.request.email &&
+              data.request.email.toLowerCase() === target.toLowerCase()
+            ) {
+              showToast(
+                `Your request for ride ${data.request.rideId} was canceled.`,
+                "warn"
+              );
+              if (document.getElementById("loadMyRequests"))
+                document.getElementById("loadMyRequests").click();
+            }
+          } catch (e) {}
+        });
+
+        // Real-time: refresh ride list when rides are updated or requests are accepted
+        socket.on("rideUpdated", () => load());
+        socket.on("requestAccepted", () => load());
       </script>
     </main>
 

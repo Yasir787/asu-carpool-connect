@@ -1,396 +1,236 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ASU Carpool Connect</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: "Trebuchet MS", Arial, sans-serif;
-        background: #f0f0f0;
-        color: #333;
-      }
-
-      /* ASU Theme Colors */
-      :root {
-        --asu-maroon: #8b1538;
-        --asu-gold: #ffc627;
-        --asu-dark: #5a0f23;
-        --asu-light: #f5f5f5;
-      }
-
-      /* Navbar */
-      .navbar {
-        background: var(--asu-maroon);
-        color: white;
-        padding: 12px 0;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        position: sticky;
-        top: 0;
-        z-index: 100;
-      }
-
-      .navbar-content {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 12px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
-      }
-
-      .navbar .logo {
-        height: 50px;
-        width: auto;
-        background: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      }
-
-      .navbar h1 {
-        font-size: 1.4em;
-        flex: 1;
-      }
-
-      .navbar-links {
-        display: flex;
-        gap: 20px;
-      }
-
-      .navbar a {
-        color: var(--asu-gold);
-        text-decoration: none;
-        font-weight: bold;
-        transition: color 0.2s;
-      }
-
-      .navbar a:hover {
-        color: white;
-      }
-
-      /* Hero Section */
-      .hero {
-        background: linear-gradient(
-          135deg,
-          var(--asu-maroon) 0%,
-          var(--asu-dark) 100%
-        );
-        color: white;
-        padding: 80px 20px;
-        text-align: center;
-      }
-
-      .hero-content {
-        max-width: 1000px;
-        margin: 0 auto;
-      }
-
-      .hero h2 {
-        font-size: 3em;
-        margin-bottom: 16px;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-      }
-
-      .hero p {
-        font-size: 1.3em;
-        margin-bottom: 24px;
-        line-height: 1.6;
-        color: var(--asu-gold);
-      }
-
-      /* Story Section */
-      .story {
-        max-width: 1000px;
-        margin: 40px auto;
-        padding: 40px 20px;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-
-      .story h3 {
-        color: var(--asu-maroon);
-        font-size: 2em;
-        margin-bottom: 20px;
-        border-bottom: 3px solid var(--asu-gold);
-        padding-bottom: 12px;
-      }
-
-      .story-text {
-        font-size: 1.05em;
-        line-height: 1.8;
-        color: #555;
-        margin-bottom: 24px;
-      }
-
-      .story-highlight {
-        background: var(--asu-light);
-        border-left: 5px solid var(--asu-gold);
-        padding: 16px;
-        margin: 20px 0;
-        border-radius: 4px;
-      }
-
-      /* Features Section */
-      .features {
-        max-width: 1000px;
-        margin: 40px auto;
-        padding: 20px;
-      }
-
-      .features h3 {
-        color: var(--asu-maroon);
-        font-size: 1.8em;
-        text-align: center;
-        margin-bottom: 30px;
-      }
-
-      .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
-      }
-
-      .feature-card {
-        background: white;
-        padding: 24px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        border-top: 5px solid var(--asu-gold);
-        text-align: center;
-      }
-
-      .feature-card h4 {
-        color: var(--asu-maroon);
-        font-size: 1.3em;
-        margin-bottom: 12px;
-      }
-
-      .feature-card p {
-        color: #666;
-        line-height: 1.6;
-      }
-
-      /* CTA Section */
-      .cta-section {
-        max-width: 1000px;
-        margin: 50px auto;
-        padding: 40px 20px;
-      }
-
-      .cta-title {
-        text-align: center;
-        color: var(--asu-maroon);
-        font-size: 2em;
-        margin-bottom: 30px;
-      }
-
-      .cta-buttons {
-        display: flex;
-        gap: 20px;
-        justify-content: center;
-        flex-wrap: wrap;
-      }
-
-      .cta-btn {
-        padding: 16px 40px;
-        font-size: 1.1em;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: bold;
-        transition: all 0.3s;
-        text-decoration: none;
-        display: inline-block;
-      }
-
-      .cta-btn-driver {
-        background: var(--asu-maroon);
-        color: white;
-      }
-
-      .cta-btn-driver:hover {
-        background: var(--asu-dark);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      }
-
-      .cta-btn-rider {
-        background: var(--asu-gold);
-        color: var(--asu-maroon);
-      }
-
-      .cta-btn-rider:hover {
-        background: #ffb300;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      }
-
-      /* Footer */
-      footer {
-        background: var(--asu-maroon);
-        color: white;
-        text-align: center;
-        padding: 24px;
-        margin-top: 60px;
-        font-size: 0.95em;
-      }
-
-      footer a {
-        color: var(--asu-gold);
-        text-decoration: none;
-      }
-
-      footer a:hover {
-        text-decoration: underline;
-      }
-
-      /* Responsive */
-      @media (max-width: 768px) {
-        .hero h2 {
-          font-size: 2em;
-        }
-
-        .hero p {
-          font-size: 1.1em;
-        }
-
-        .navbar-links {
-          gap: 10px;
-        }
-
-        .cta-buttons {
-          flex-direction: column;
-        }
-
-        .cta-btn {
-          width: 100%;
-          text-align: center;
-        }
-      }
-    </style>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>UniPool - Ride Connect</title>
+    <link rel="stylesheet" href="app_style.css" />
+    <!-- Ionicons -->
+    <script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
+    ></script>
   </head>
   <body>
-    <nav class="navbar">
-      <div class="navbar-content">
-        <a href="/" target="_self">
-          <img src="/assets/asu_logo.png" alt="ASU" class="logo" />
-        </a>
-        <h1>ASU Carpool Connect</h1>
-        <div class="navbar-links">
-          <a href="#home">Home</a>
-          <a href="#features">Features</a>
-          <a href="#get-started">Get Started</a>
+    <!-- Map Background -->
+    <div id="map-background"></div>
+
+    <!-- Main UI Layer -->
+    <div class="ui-layer">
+      <!-- Header -->
+      <header class="app-header" style="background: rgba(255, 255, 255, 0.95); box-shadow: 0 4px 20px rgba(0,0,0,0.1); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+             <!-- Logo / Brand -->
+             <div style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--primary); letter-spacing: -0.5px;">
+                UniPool
+             </div>
+        </div>
+
+        <div class="mode-switch">
+          <button id="mode-rider" class="active" onclick="setMode('rider')">
+            Rider
+          </button>
+          <button id="mode-driver" onclick="setMode('driver')">Driver</button>
+        </div>
+
+        <button class="profile-btn" onclick="toggleProfile()">
+          <ion-icon name="person-circle-outline"></ion-icon>
+        </button>
+      </header>
+
+      <!-- Center Spacer / Driver HUD -->
+      <div
+        id="driver-hud"
+        class="hidden"
+        style="
+          position: absolute;
+          top: 80px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: var(--dark);
+          color: white;
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-weight: 600;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        "
+      >
+        <span class="pulse" style="color: #4ade80; margin-right: 6px">●</span>
+        You are Online
+      </div>
+
+      <!-- Spacer -->
+      <div style="flex: 1"></div>
+
+      <!-- Rider Bottom Sheet -->
+      <div id="rider-sheet" class="bottom-sheet">
+        <h2 style="margin-bottom: 16px; font-size: 1.5rem">Where to?</h2>
+        <div class="search-container">
+          <ion-icon name="search-outline" class="search-icon"></ion-icon>
+          <input
+            type="text"
+            class="search-input"
+            id="destination-input"
+            placeholder="Search destination (e.g. Memorial Union)"
+          />
+        </div>
+
+        <!-- Available Rides List -->
+        <div id="rides-list" class="ride-options">
+          <div
+            style="
+              text-align: center;
+              padding: 20px;
+              color: #888;
+              font-style: italic;
+            "
+          >
+            Looking for rides near you...
+          </div>
         </div>
       </div>
-    </nav>
 
-    <section class="hero" id="home">
-      <div class="hero-content">
-        <h2>Share the Ride, Share the Experience</h2>
-        <p>
-          Connect with fellow Sun Devils and make your commute better, together
+      <!-- Driver Bottom Sheet -->
+      <div id="driver-sheet" class="bottom-sheet hidden">
+        <h2 style="margin-bottom: 16px; font-size: 1.5rem">Ride Requests</h2>
+        <div id="requests-list" class="ride-options">
+          <div style="text-align: center; padding: 20px; color: #888">
+            No active requests.
+          </div>
+        </div>
+        <button
+          class="action-btn"
+          onclick="postNewRide()"
+          style="background: var(--primary)"
+        >
+          <ion-icon
+            name="add-circle-outline"
+            style="vertical-align: middle; margin-right: 8px"
+          ></ion-icon>
+          Post a New Ride
+        </button>
+      </div>
+    </div>
+
+    <!-- Login/Email Modal -->
+    <div
+      id="login-modal"
+      style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="
+          background: white;
+          padding: 32px;
+          border-radius: 24px;
+          width: 90%;
+          max-width: 400px;
+          text-align: center;
+        "
+      >
+        <h2
+          style="color: var(--primary); margin-bottom: 12px; font-size: 1.8rem"
+        >
+          ASU Login
+        </h2>
+        <p style="margin-bottom: 24px; color: #666">
+          Please enter your ASU email to continue.
         </p>
-      </div>
-    </section>
-
-    <section class="story">
-      <h3>🚗 Our Story</h3>
-      <p class="story-text">
-        ASU Carpool Connect was created to solve a simple problem: many students
-        and staff at Arizona State University travel similar routes but often
-        travel alone. Carpooling benefits everyone—it reduces costs, saves time,
-        and creates a stronger university community.
-      </p>
-
-      <div class="story-highlight">
-        <strong>Why Carpool at ASU?</strong>
-        <ul style="margin-left: 20px; margin-top: 10px; line-height: 1.8">
-          <li>
-            💰 <strong>Save Money</strong> — Split gas, tolls, and parking costs
-          </li>
-          <li>
-            🌍 <strong>Reduce Emissions</strong> — Drive alone, or ride together
-            and help the planet
-          </li>
-          <li>
-            ⏰ <strong>Save Time</strong> — Use carpool lanes, arrive refreshed
-          </li>
-          <li>
-            👥 <strong>Build Community</strong> — Meet fellow Sun Devils and
-            make connections
-          </li>
-          <li>
-            🎓 <strong>Network</strong> — Expand your ASU network during your
-            commute
-          </li>
-        </ul>
-      </div>
-
-      <p class="story-text">
-        Whether you're a <strong>driver</strong> looking to offset costs and
-        meet people, or a <strong>rider</strong>
-        seeking a reliable commute, ASU Carpool Connect makes it easy to find
-        your perfect carpool match—all within the ASU community.
-      </p>
-    </section>
-
-    <section class="features" id="features">
-      <h3>✨ How It Works</h3>
-      <div class="features-grid">
-        <div class="feature-card">
-          <h4>🚗 For Drivers</h4>
-          <p>
-            Post your ride details, set your schedule, and connect with riders.
-            Earn money or just meet cool people while you commute.
-          </p>
-        </div>
-        <div class="feature-card">
-          <h4>🛣️ For Riders</h4>
-          <p>
-            Browse available rides, see driver details, and request a seat.
-            Safe, affordable, and community-driven.
-          </p>
-        </div>
-        <div class="feature-card">
-          <h4>🔒 ASU Verified</h4>
-          <p>
-            All users must verify with an @asu.edu email. Only ride with fellow
-            Sun Devils. Safety and trust first.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <section class="cta-section" id="get-started">
-      <h2 class="cta-title">Ready to Join?</h2>
-      <div class="cta-buttons">
-        <a href="/driver.html" class="cta-btn cta-btn-driver"
-          >🚗 I'm a Driver</a
+        <input
+          id="login-email"
+          type="email"
+          placeholder="yourname@asu.edu"
+          style="
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            text-align: center;
+          "
+        />
+        <button
+          onclick="handleLogin()"
+          style="
+            width: 100%;
+            background: var(--secondary);
+            color: var(--dark);
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+          "
         >
-        <a href="/rider.html" class="cta-btn cta-btn-rider"
-          >🛣️ I'm Looking for a Ride</a
-        >
+          Continue
+        </button>
       </div>
-    </section>
+    </div>
 
-    <footer>
-      <p>
-        ASU Carpool Connect © 2025 |
-        <a href="https://www.asu.edu" target="_blank"
-          >Arizona State University</a
-        >
-      </p>
-      <p style="margin-top: 8px; font-size: 0.9em">
-        Connecting Sun Devils, One Ride at a Time
-      </p>
-    </footer>
+    <!-- Post Ride Modal -->
+    <div id="post-ride-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center; display:none;">
+        <div style="background:white; padding:24px; border-radius:20px; width:90%; max-width:400px; animation: slideUp 0.3s ease-out;">
+            <h2 style="margin-bottom:16px; color:var(--primary);">Post a Ride</h2>
+            <form id="new-ride-form" onsubmit="submitNewRide(event)">
+                <div style="margin-bottom:12px;">
+                    <label style="display:block; font-weight:600; margin-bottom:4px">Origin</label>
+                    <input name="origin" required placeholder="Where are you starting?" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label style="display:block; font-weight:600; margin-bottom:4px">Destination</label>
+                    <input name="destination" required placeholder="Where are you going?" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                </div>
+                <div style="display:flex; gap:12px; margin-bottom:12px;">
+                    <div style="flex:1">
+                        <label style="display:block; font-weight:600; margin-bottom:4px">Seats</label>
+                        <input name="seats" type="number" min="1" value="3" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                    </div>
+                    <div style="flex:1">
+                        <label style="display:block; font-weight:600; margin-bottom:4px">Time</label>
+                        <input name="time" type="time" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                    </div>
+                </div>
+                <div style="margin-bottom:20px;">
+                     <label style="display:block; font-weight:600; margin-bottom:4px">Your Name</label>
+                     <input name="name" id="driver-name-input" required placeholder="Display Name" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button type="button" onclick="closePostModal()" style="flex:1; padding:12px; border:none; background:#eee; border-radius:8px; font-weight:600; cursor:pointer;">Cancel</button>
+                    <button type="submit" style="flex:1; padding:12px; border:none; background:var(--primary); color:white; border-radius:8px; font-weight:600; cursor:pointer;">Post Ride</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Initialize app after scripts load
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
   </body>
 </html>

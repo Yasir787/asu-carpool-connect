@@ -10,7 +10,15 @@
         padding: 0;
         box-sizing: border-box;
       }
+      html,
       body {
+        height: 100%;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
         font-family: "Trebuchet MS", Arial, sans-serif;
         background: #f0f0f0;
         color: #333;
@@ -31,9 +39,9 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       }
       .navbar-content {
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 0 12px;
+        width: 100%;
+        max-width: none;
+        padding: 0 20px;
         display: flex;
         align-items: center;
         gap: 16px;
@@ -64,9 +72,18 @@
       }
 
       main {
-        max-width: 1000px;
-        margin: 24px auto;
-        padding: 0 12px;
+        width: 100%;
+        max-width: none;
+        margin: 24px 0;
+        padding: 0 20px;
+        flex: 1 0 auto;
+      }
+
+      /* Make requests list use full width on driver page */
+      #requestsList {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 12px;
       }
 
       .section {
@@ -175,8 +192,8 @@
         color: white;
         text-align: center;
         padding: 16px;
-        margin-top: 40px;
         font-size: 0.9em;
+        flex-shrink: 0;
       }
 
       footer a {
@@ -220,7 +237,14 @@
           >
 
           <label for="phone">Phone</label>
-          <input id="phone" name="phone" />
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            placeholder="1234567890"
+            pattern="\d{10}"
+            maxlength="10"
+          />
 
           <label for="origin">Origin*</label>
           <input id="origin" name="origin" required />
@@ -258,7 +282,9 @@
         </div>
       </section>
 
+      <script src="/socket.io/socket.io.js"></script>
       <script>
+        const socket = io();
         const form = document.getElementById("driverForm");
         const msg = document.getElementById("msg");
 
@@ -282,6 +308,18 @@
               "Please enter a valid ASU email address (ending with @asu.edu).";
             msg.className = "";
             return;
+          }
+
+          // Phone validation: optional, but if provided must be 10 digits
+          if (data.phone && data.phone.trim()) {
+            const phoneDigits = data.phone.replace(/\D/g, "");
+            if (!/^\d{10}$/.test(phoneDigits)) {
+              msg.textContent =
+                "Phone must be exactly 10 digits (numbers only).";
+              msg.className = "";
+              return;
+            }
+            data.phone = phoneDigits; // send digits-only
           }
 
           try {
@@ -335,12 +373,27 @@
               arr.forEach((r) => {
                 const el = document.createElement("div");
                 el.className = "request-item";
+                const statusText = r.status
+                  ? `Status: ${r.status}`
+                  : "Status: pending";
+                const acceptBtn =
+                  r.status === "pending"
+                    ? `<button class="acceptBtn" data-reqid="${r.id}">Accept</button>`
+                    : "";
+                const cancelBtn =
+                  r.status === "pending"
+                    ? `<button class="driverCancelBtn" data-reqid="${r.id}">Cancel</button>`
+                    : "";
+
                 el.innerHTML = `
-              <strong>${r.name}</strong> (${r.email})
+              <strong>${r.name}</strong> (${
+                  r.email
+                }) <small style="margin-left:8px;color:#666">${statusText}</small>
               <div>📞 ${r.phone || "Not provided"}</div>
               <div style="margin-top:6px; font-style: italic;">${
                 r.message || "No message"
               }</div>
+                <div style="margin-top:8px">${acceptBtn} ${cancelBtn}</div>
               <div class="meta">Requested: ${new Date(
                 r.createdAt
               ).toLocaleString()}</div>
@@ -359,6 +412,77 @@
             document.getElementById("loadRequests").click();
           }
         }, 10000);
+
+        // Handle accept button clicks (delegated)
+        document.addEventListener("click", async (ev) => {
+          const btn = ev.target.closest && ev.target.closest(".acceptBtn");
+          if (!btn) return;
+          const reqId = btn.getAttribute("data-reqid");
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/api/requests/${reqId}/accept`, {
+              method: "POST",
+            });
+            if (!res.ok) {
+              const j = await res.json();
+              alert(j.error || "Failed to accept request");
+              btn.disabled = false;
+              return;
+            }
+            // refresh list
+            document.getElementById("loadRequests").click();
+          } catch (e) {
+            alert("Network error: " + e.message);
+            btn.disabled = false;
+          }
+        });
+
+        // Handle driver cancel button clicks (delegated)
+        document.addEventListener("click", async (ev) => {
+          const btn =
+            ev.target.closest && ev.target.closest(".driverCancelBtn");
+          if (!btn) return;
+          const reqId = btn.getAttribute("data-reqid");
+          if (!confirm("Cancel this request? This will notify the rider."))
+            return;
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/api/requests/${reqId}/cancel`, {
+              method: "POST",
+            });
+            if (!res.ok) {
+              const j = await res.json();
+              alert(j.error || "Failed to cancel request");
+              btn.disabled = false;
+              return;
+            }
+            // refresh list
+            document.getElementById("loadRequests").click();
+          } catch (e) {
+            alert("Network error: " + e.message);
+            btn.disabled = false;
+          }
+        });
+
+        // Real-time events: refresh requests when new request arrives or a request is accepted
+        socket.on("newRequest", (r) => {
+          const email = (
+            document.getElementById("driverLookupEmail").value || ""
+          ).toLowerCase();
+          try {
+            if (
+              r.rideDriverEmail &&
+              r.rideDriverEmail.toLowerCase() === email
+            ) {
+              document.getElementById("loadRequests").click();
+            }
+          } catch (e) {}
+        });
+
+        socket.on("requestAccepted", (data) => {
+          // If the driver is viewing, refresh list
+          document.getElementById("loadRequests").click();
+        });
       </script>
     </main>
 
